@@ -1,0 +1,166 @@
+# Sample config.yaml
+#
+Auth:
+  region: "{{ region }}"
+Metrics:
+{%- for nodeid in resources %}
+- Namespace: "AWS/Redshift"
+  MetricName: "CPUUtilization"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Percent"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "DatabaseConnections"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Count"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "NetworkTransmitThroughput"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Bytes/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+  
+- Namespace: "AWS/Redshift"
+  MetricName: "NetworkReceiveThroughput"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Bytes/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "PercentageDiskSpaceUsed"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Percentage"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+
+- Namespace: "AWS/Redshift"
+  MetricName: "PercentageDiskSpaceUsed"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Percentage"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "ReadIOPS"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Count/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+
+
+- Namespace: "AWS/Redshift"
+  MetricName: "WriteIOPS"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Count/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "WriteLatency"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Seconds"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "ReadLatency"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Seconds"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "ReadThroughput"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Bytes/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/Redshift"
+  MetricName: "WriteThroughput"
+  Statistics:
+  - "Maximum"
+  - "Average"
+  Unit: "Bytes/Second"
+  Dimensions:
+    ClusterIdentifier: "{{ nodeid }}"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ nodeid }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+{% endfor %}

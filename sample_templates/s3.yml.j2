@@ -1,0 +1,33 @@
+# Sample config.yaml
+#
+Auth:
+  region: "{{ region }}"
+Metrics:
+{%- for bucket in resources %}
+- Namespace: "AWS/S3"
+  MetricName: "NumberOfObjects"
+  Statistics:
+  - "Maximum"
+  Unit: "Count"
+  Dimensions:
+    BucketName: "{{ bucket }}"
+    StorageType: "AllStorageTypes"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ bucket }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+- Namespace: "AWS/S3"
+  MetricName: "BucketSizeBytes"
+  Statistics:
+  - "Maximum"
+  Unit: "Count"
+  Dimensions:
+    BucketName: "{{ bucket }}"
+    StorageType: "StandardStorage"
+  Options:
+    {#- I'm assuming my tag names are safe to use as metric names here #}
+    Formatter: 'cloudwatch.%(Namespace)s.{{ bucket }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Period: 5
+
+{% endfor %}
