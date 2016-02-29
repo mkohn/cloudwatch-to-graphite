@@ -41,6 +41,7 @@ import boto.elasticache
 import boto.ec2.autoscale
 import boto.kinesis
 import boto.sqs
+import boto.redshift
 import jinja2
 import os.path
 
@@ -118,6 +119,21 @@ def list_ec2(region, filter_by_kwargs):
     return lookup(instances, filter_by=filter_by_kwargs)
 
 
+def list_redshift(region, filter_by_kwargs):
+    conn = boto.redshift.connect_to_region(region)
+    resp = conn.describe_clusters()
+    data = resp["DescribeClustersResponse"]["DescribeClustersResult"]["Clusters"]
+    cluster = [x['ClusterIdentifier'] for x in data]
+    return cluster
+
+def list_s3(region, filter_by_kwargs):
+    conn = boto.s3.connect_to_region(region)
+    buckets = conn.get_all_buckets()
+    my_list = []
+    for bucket in buckets:
+	my_list.insert(0, str(bucket)[9:][:-1])
+    return my_list
+
 def list_elb(region, filter_by_kwargs):
     """List all load balancers."""
     conn = boto.ec2.elb.connect_to_region(region)
@@ -184,7 +200,9 @@ list_resources = {
     'asg': list_autoscaling_group,
     'sqs': list_sqs,
     'kinesisapp': list_kinesis_applications,
-    'dynamodb': list_dynamodb
+    'redshift': list_redshift,
+    'dynamodb': list_dynamodb,
+    's3': list_s3
 }
 
 
@@ -215,7 +233,7 @@ def main():
         print('ERROR: AWS namespace "{}" not supported or does not exist'
               .format(namespace))
         sys.exit(1)
-
+    
     print(template.render({
         'filters': filters,
         'region': region,       # Use for Auth config section if needed
