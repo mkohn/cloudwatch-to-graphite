@@ -2,14 +2,61 @@ Metrics:
 {%- for elb in resources %}
 - Namespace: "AWS/ELB"
   MetricName: "RequestCount"
-  Statistics: "Sum"
+  Statistics: 
+    - "Sum"
+  Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "HTTPCode_Backend_2XX"
+  Statistics: 
+    - "Sum"
+  Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "HTTPCode_Backend_4XX"
+  Statistics: 
+    - "Sum"
   Unit: "Count"
   Dimensions:
     LoadBalancerName: "{{ elb.name }}"
 - Namespace: "AWS/ELB"
   MetricName: "HTTPCode_Backend_5XX"
-  Statistics: "Sum"
+  Statistics: 
+    - "Sum"
   Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "HTTPCode_ELB_5XX"
+  Statistics: 
+    - "Sum"
+  Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "UnHealthyHostCount"
+  Statistics: 
+    - "Maximum"
+    - "Average"
+  Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "HealthyHostCount"
+  Statistics: 
+    - "Maximum"
+    - "Average"
+  Unit: "Count"
+  Dimensions:
+    LoadBalancerName: "{{ elb.name }}"
+- Namespace: "AWS/ELB"
+  MetricName: "Latency"
+  Statistics: 
+    - "Maximum"
+    - "Average"
+  Unit: "Seconds"
   Dimensions:
     LoadBalancerName: "{{ elb.name }}"
   Options:
