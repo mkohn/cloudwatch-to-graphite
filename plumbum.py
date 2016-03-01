@@ -131,7 +131,7 @@ def list_s3(region, filter_by_kwargs):
     buckets = conn.get_all_buckets()
     my_list = []
     for bucket in buckets:
-	my_list.insert(0, str(bucket)[9:][:-1])
+        my_list.insert(0, str(bucket)[9:][:-1])
     return my_list
 
 def list_elb(region, filter_by_kwargs):

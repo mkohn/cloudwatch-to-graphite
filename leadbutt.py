@@ -134,30 +134,31 @@ def leadbutt(config_file, cli_options, verbose=False, **kwargs):
         end_time = datetime.datetime.utcnow()
         start_time = end_time - datetime.timedelta(
             seconds=period_local * count_local)
-	
-	if metric['Namespace'] == "AWS/S3" or metric['Namespace'] == "AWS/Redshift":
-		yesterday = (start_time - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-		today = (start_time - timedelta(days=0)).replace(hour=0, minute=0, second=0, microsecond=0)
-		results = conn.get_metric_statistics(
-		    86400,
-		    yesterday,
-		    today,
-		    metric['MetricName'],
-		    metric['Namespace'], 
-		    metric['Statistics'],
-		    dimensions=metric['Dimensions'],
-		)
-	else:
-		results = conn.get_metric_statistics(
-                    period_local,  # minimum: 60
-                    start_time,
-                    end_time,
-                    metric['MetricName'],  # RequestCount, CPUUtilization
-                    metric['Namespace'],  # AWS/ELB, AWS/EC2
-                    metric['Statistics'],  # Sum, Maximum
-                    dimensions=metric['Dimensions'],
-                    unit=metric['Unit'],  # Count, Percent
-                )
+
+        # if the metric is something that AWS only give you once per day
+        if metric['Namespace'] == "AWS/S3" or metric['Namespace'] == "AWS/Redshift":
+            yesterday = (start_time - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            today = (start_time - timedelta(days=0)).replace(hour=0, minute=0, second=0, microsecond=0)
+            results = conn.get_metric_statistics(
+                86400,
+                yesterday,
+                today,
+                metric['MetricName'],
+                metric['Namespace'],
+                metric['Statistics'],
+                dimensions=metric['Dimensions'],
+            )
+        else:
+            results = conn.get_metric_statistics(
+                        period_local,  # minimum: 60
+                        start_time,
+                        end_time,
+                        metric['MetricName'],  # RequestCount, CPUUtilization
+                        metric['Namespace'],  # AWS/ELB, AWS/EC2
+                        metric['Statistics'],  # Sum, Maximum
+                        dimensions=metric['Dimensions'],
+                        unit=metric['Unit'],  # Count, Percent
+                    )
         # sys.stderr.write('{} {}\n'.format(options['Count'], len(results)))
         output_results(results, metric, options)
 
