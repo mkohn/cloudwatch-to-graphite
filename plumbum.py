@@ -29,13 +29,14 @@ They're written in jinja2, and have these variables available:
 """
 from __future__ import unicode_literals
 
-import re
+import argparse
 import sys
 
 import boto
 import boto.dynamodb
 import boto.ec2
 import boto.ec2.elb
+import boto.ec2.cloudwatch
 import boto.rds
 import boto.elasticache
 import boto.ec2.autoscale
@@ -45,10 +46,14 @@ import boto.redshift
 import jinja2
 import os.path
 
-__version__ = '0.8.1'
+__version__ = '0.9.0'
 
 # DEFAULT_NAMESPACE = 'ec2'  # TODO
 DEFAULT_REGION = 'us-east-1'
+
+
+class CliArgsException(Exception):
+    pass
 
 
 def get_property_func(key):
@@ -69,7 +74,7 @@ def get_property_func(key):
 def filter_key(filter_args):
     def filter_instance(instance):
         return all([value == get_property_func(key)(instance)
-            for key, value in filter_args.items()])
+                    for key, value in filter_args.items()])
     return filter_instance
 
 
@@ -79,37 +84,40 @@ def lookup(instances, filter_by=None):
     return instances
 
 
-def interpret_options(options):
-    """Parse all the command line options."""
-    # template always has to be index 0
-    template = options[0]
-    # namespace always has to be index 1. Support 'ec2' (human friendly) and
-    # 'AWS/EC2' (how CloudWatch natively calls these things)
-    namespace = options[1].rsplit('/', 2)[-1].lower()
-    next_idx = 2
-    # region might be index 2
-    region = ''
-    if len(options) > 2 and re.match(r'^\w+\-[\w\-]+\-\d+$', options[2]):
-        region = options[2]
-        next_idx += 1
-    else:
-        next_idx = 2
-    region = region or boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
+def interpret_options(args=sys.argv[1:]):
 
-    filter_by = {}
-    extras = []
-    for arg in options[next_idx:]:
-        if arg.startswith('-'):
-            # throw these away for now
-            extras.append(arg)
-        elif '=' in arg:
-            key, value = arg.split('=', 2)
-            filter_by[key] = value
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version', action='version', version=__version__)
+    parser.add_argument("-r", "--region", help="AWS region", default=DEFAULT_REGION)
+    parser.add_argument("-f", "--filter", help="filter to apply to AWS objects")
+    parser.add_argument('--token', action='append', help='a key=value pair to use when populating templates')
+    parser.add_argument("namespace", type=str, help="AWS namespace")
+    parser.add_argument("template", type=str, help="the template to interpret")
+
+    args = parser.parse_args(args=args)
+
+    # Support 'ec2' (human friendly) and 'AWS/EC2' (how CloudWatch natively calls these things)
+    namespace = args.namespace.rsplit('/', 2)[-1].lower()
+    return args.template, namespace, args.region, args.filter, args.token
+
+
+def list_billing(region, filter_by_kwargs):
+    """List available billing metrics"""
+    conn = boto.ec2.cloudwatch.connect_to_region(region)
+    metrics = conn.list_metrics(metric_name='EstimatedCharges')
+    # Filtering is based on metric Dimensions.  Only really valuable one is
+    # ServiceName.
+    if filter_by_kwargs:
+        filter_key = filter_by_kwargs.keys()[0]
+        filter_value = filter_by_kwargs.values()[0]
+        if filter_value:
+            filtered_metrics = [x for x in metrics if x.dimensions.get(filter_key) and x.dimensions.get(filter_key)[0] == filter_value]
         else:
-            # throw these away for now
-            extras.append(arg)
-
-    return template, namespace, region, filter_by, extras
+            # ServiceName=''
+            filtered_metrics = [x for x in metrics if not x.dimensions.get(filter_key)]
+    else:
+        filtered_metrics = metrics
+    return filtered_metrics
 
 
 def list_ec2(region, filter_by_kwargs):
@@ -153,7 +161,10 @@ def list_elasticache(region, filter_by_kwargs):
     conn = boto.elasticache.connect_to_region(region)
     req = conn.describe_cache_clusters()
     data = req["DescribeCacheClustersResponse"]["DescribeCacheClustersResult"]["CacheClusters"]
-    clusters = [x['CacheClusterId'] for x in data]
+    if filter_by_kwargs:
+        clusters = [x['CacheClusterId'] for x in data if x[filter_by_kwargs.keys()[0]] == filter_by_kwargs.values()[0]]
+    else:
+        clusters = [x['CacheClusterId'] for x in data]
     return clusters
 
 
@@ -202,19 +213,15 @@ list_resources = {
     'kinesisapp': list_kinesis_applications,
     'redshift': list_redshift,
     'dynamodb': list_dynamodb,
-    's3': list_s3
+    's3': list_s3,
+    'dynamodb': list_dynamodb,
+    'billing': list_billing
 }
 
 
 def main():
-    if '--version' in sys.argv:
-        print(__version__)
-        sys.exit()
-    if len(sys.argv) < 3:
-        print(__doc__)
-        sys.exit()
 
-    template, namespace, region, filters, __ = interpret_options(sys.argv[1:])
+    template, namespace, region, filters, tokens = interpret_options()
 
     # get the template first so this can fail before making a network request
     fs_path = os.path.abspath(os.path.dirname(template))
@@ -233,12 +240,22 @@ def main():
         print('ERROR: AWS namespace "{}" not supported or does not exist'
               .format(namespace))
         sys.exit(1)
-    
-    print(template.render({
+
+    # base tokens
+    template_tokens = {
         'filters': filters,
-        'region': region,       # Use for Auth config section if needed
+        'region': region,  # Use for Auth config section if needed
         'resources': resources,
-    }))
+    }
+    # add tokens passed as cli args:
+    if tokens is not None:
+        for token_pair in tokens:
+            if token_pair.count('=') != 1:
+                raise CliArgsException("token pair '{0}' invalid, must contain exactly one '=' character.".format(token_pair))
+            (key, value) = token_pair.split('=')
+            template_tokens[key] = value
+
+    print(template.render(template_tokens))
 
 
 if __name__ == '__main__':

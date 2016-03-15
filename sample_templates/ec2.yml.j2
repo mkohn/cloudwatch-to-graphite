@@ -13,12 +13,13 @@ Metrics:
   Dimensions:
     InstanceId: "{{ instance.id }}"
   Options:
-    {#- I'm assuming my tag names are safe to use as metric names here #}
-    Formatter: 'collectd.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Formatter: 'cloudwatch.%(Namespace)s.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
     Period: 5
 
 - Namespace: "AWS/EC2"
-  MetricName: "DiskWriteOps"
+  MetricName:
+  - "DiskWriteOps"
+  - "DiskReadOps"
   Statistics:
   - "Maximum"
   - "Average"
@@ -26,25 +27,14 @@ Metrics:
   Dimensions:
     InstanceId: "{{ instance.id }}"
   Options:
-    {#- I'm assuming my tag names are safe to use as metric names here #}
-    Formatter: 'collectd.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Formatter: 'cloudwatch.%(Namespace)s.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
     Period: 5
 
-- Namespace: "AWS/EC2"
-  MetricName: "DiskReadOps"
-  Statistics:
-  - "Maximum"
-  - "Average"
-  Unit: "Count"
-  Dimensions:
-    InstanceId: "{{ instance.id }}"
-  Options:
-    {#- I'm assuming my tag names are safe to use as metric names here #}
-    Formatter: 'collectd.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
-    Period: 5
 
 - Namespace: "AWS/EC2"
-  MetricName: "NetworkIn"
+  MetricName:
+  - "NetworkIn"
+  - "NetworkOut"
   Statistics:
   - "Maximum"
   - "Average"
@@ -52,21 +42,8 @@ Metrics:
   Dimensions:
     InstanceId: "{{ instance.id }}"
   Options:
-    {#- I'm assuming my tag names are safe to use as metric names here #}
-    Formatter: 'collectd.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
+    Formatter: 'cloudwatch.%(Namespace)s.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
     Period: 5
 
-- Namespace: "AWS/EC2"
-  MetricName: "NetworkOut"
-  Statistics:
-  - "Maximum"
-  - "Average"
-  Unit: "Bytes"
-  Dimensions:
-    InstanceId: "{{ instance.id }}"
-  Options:
-    {#- I'm assuming my tag names are safe to use as metric names here #}
-    Formatter: 'collectd.{{ instance.tags['Name'] }}.%(MetricName)s.%(statistic)s.%(Unit)s'
-    Period: 5
 
 {% endfor %}

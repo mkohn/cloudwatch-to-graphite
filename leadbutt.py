@@ -30,7 +30,7 @@ if sys.version_info[0] >= 3:
 else:
     text_type = unicode
 
-__version__ = '0.8.1'
+__version__ = '0.9.0'
 
 
 # configuration
@@ -102,9 +102,11 @@ def output_results(results, metric, options):
             stat_keys = [stat_keys]
         for statistic in stat_keys:
             context['statistic'] = statistic
-            # get and then sanitize metric name
+            # get and then sanitize metric name, first copy the unit name from the
+            # result to the context to keep the default format happy
+            context['Unit'] = result['Unit']
             metric_name = (formatter % context).replace('/', '.').lower()
-            line = '{} {} {}\n'.format(
+            line = '{0} {1} {2}\n'.format(
                 metric_name,
                 result[statistic],
                 timegm(result['Timestamp'].timetuple()),
@@ -135,33 +137,55 @@ def leadbutt(config_file, cli_options, verbose=False, **kwargs):
         start_time = end_time - datetime.timedelta(
             seconds=period_local * count_local)
 
-        # if the metric is something that AWS only give you once per day
-        if metric['Namespace'] == "AWS/S3" or metric['Namespace'] == "AWS/Redshift":
-            yesterday = (start_time - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            today = (start_time - timedelta(days=0)).replace(hour=0, minute=0, second=0, microsecond=0)
+        # if 'Unit 'is in the config, request only that; else get all units
+        unit = metric.get('Unit')
+        metric_names = metric['MetricName']
+        if not isinstance(metric_names, list):
+            metric_names = [metric_names]
+        for metric_name in metric_names:
+            # we need a copy of the metric dict with the MetricName swapped out
+            this_metric = metric.copy()
+            this_metric['MetricName'] = metric_name
             results = conn.get_metric_statistics(
-                86400,
-                yesterday,
-                today,
-                metric['MetricName'],
-                metric['Namespace'],
-                metric['Statistics'],
+                period_local,  # minimum: 60
+                start_time,
+                end_time,
+                metric_name,  # RequestCount, CPUUtilization
+                metric['Namespace'],  # AWS/ELB, AWS/EC2
+                metric['Statistics'],  # Sum, Maximum
                 dimensions=metric['Dimensions'],
+                unit=unit,
             )
-        else:
-            results = conn.get_metric_statistics(
-                        period_local,  # minimum: 60
-                        start_time,
-                        end_time,
-                        metric['MetricName'],  # RequestCount, CPUUtilization
-                        metric['Namespace'],  # AWS/ELB, AWS/EC2
-                        metric['Statistics'],  # Sum, Maximum
-                        dimensions=metric['Dimensions'],
-                        unit=metric['Unit'],  # Count, Percent
-                    )
-        # sys.stderr.write('{} {}\n'.format(options['Count'], len(results)))
-        output_results(results, metric, options)
+            # sys.stderr.write('{} {}\n'.format(options['Count'], len(results)))
+            output_results(results, this_metric, options)
 
+
+        ## if the metric is something that AWS only give you once per day
+        #if metric['Namespace'] == "AWS/S3" or metric['Namespace'] == "AWS/Redshift":
+        #    yesterday = (start_time - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        #    today = (start_time - timedelta(days=0)).replace(hour=0, minute=0, second=0, microsecond=0)
+        #    results = conn.get_metric_statistics(
+        #        86400,
+        #        yesterday,
+        #        today,
+        #        metric['MetricName'],
+        #        metric['Namespace'],
+        #        metric['Statistics'],
+        #        dimensions=metric['Dimensions'],
+        #    )
+        #else:
+        #    results = conn.get_metric_statistics(
+        #                period_local,  # minimum: 60
+        #                start_time,
+        #                end_time,
+        #                metric['MetricName'],  # RequestCount, CPUUtilization
+        #                metric['Namespace'],  # AWS/ELB, AWS/EC2
+        #                metric['Statistics'],  # Sum, Maximum
+        #                dimensions=metric['Dimensions'],
+        #                unit=metric['Unit'],  # Count, Percent
+        #            )
+        ## sys.stderr.write('{} {}\n'.format(options['Count'], len(results)))
+        #output_results(results, metric, options)
 
 def main(*args, **kwargs):
     options = docopt(__doc__, version=__version__)
